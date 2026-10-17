@@ -31,7 +31,8 @@ internal static class Patch_PrepareCaravan_Leave
             if (pawn.RaceProps.Animal)
                 continue;
             var pawnData = pawn.GetExtendedPawnData();
-            if (pawnData.ReservedMount != null)
+            //Only a mount that is part of this caravan; a Ride and Roll reservation may point at an animal staying home
+            if (pawnData.ReservedMount != null && ___lord.ownedPawns.Contains(pawnData.ReservedMount))
             {
                 if (pawnData.ReservedMount.IsStillMountable(pawn, out var reason))
                     pawn.GoMount(pawnData.ReservedMount);

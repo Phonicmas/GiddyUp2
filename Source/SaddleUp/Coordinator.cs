@@ -1,10 +1,7 @@
 ﻿using GiddyUp;
 using RimWorld;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
 using Verse;
 using Verse.AI;
@@ -13,30 +10,31 @@ using Verse.Sound;
 namespace GiddyUpCore.SaddleUp
 {
     public record MountPairing(Pawn Rider, Pawn Mount, float Distance);
+
+    //Collects the riders from one frame's worth of gizmo clicks and pairs them with the closest free mounts. Runs from
+    //MapComponentUpdate so it also works while paused; it used to toggle the game's pause state to get a tick in.
     public class Coordinator(Map map) : MapComponent(map)
     {
         private bool WakeUp = false;
-        private bool DoNow = false;
-        private List<Pawn> MonitoredPawns = new();
-        public override void MapComponentTick()
+        private readonly List<Pawn> MonitoredPawns = new();
+
+        public override void MapComponentUpdate()
         {
             if (!WakeUp)
                 return;
 
             WakeUp = false;
 
-            if (DoNow)
-            {
-                DoNow = false;
-                Find.TickManager.TogglePaused();
-            }
-
-            var pawns = MonitoredPawns.ToList();
+            var pawns = MonitoredPawns.Where(x => x.Spawned && x.Map == map).ToList();
             MonitoredPawns.Clear();
-            var mounts = Find.CurrentMap.mapPawns.PawnsInFaction(Faction.OfPlayer)
-                .Where<Pawn>(x => (x.RaceProps.Animal || (ModSettings_GiddyUp.mechanoidsEnabled && x.RaceProps.IsMechanoid)) &&
-                                  x.IsEverMountable() &&
-                                  (x.CurJobDef != ResourceBank.JobDefOf.Mounted || x.GetExtendedPawnData()?.ReservedBy?.CurJobDef != ResourceBank.JobDefOf.Mount)).ToList();
+            if (pawns.Count == 0)
+                return;
+
+            //Only this map's spawned colony animals (and mechs) that could ever be ridden and aren't ridden right now
+            var mounts = map.mapPawns.SpawnedPawnsInFaction(Faction.OfPlayer)
+                .Where(x => (x.RaceProps.Animal || (ModSettings_GiddyUp.mechanoidsEnabled && x.RaceProps.IsMechanoid)) &&
+                            x.IsEverMountable() && !x.IsMountedAnimal())
+                .ToList();
 
             // Rider, Mount
             var mappedMounts = new Dictionary<Pawn, Pawn>();
@@ -44,12 +42,12 @@ namespace GiddyUpCore.SaddleUp
             // Master
             foreach (var pawn in pawns)
             {
-                var masterOf = mounts.Where(mount => mount.playerSettings.Master == pawn).ToArray();
-                if(!masterOf.Any())
+                var masterOf = mounts.Where(mount => mount.playerSettings?.Master == pawn && CanRide(pawn, mount)).ToArray();
+                if (!masterOf.Any())
                     continue;
 
                 var closest = masterOf.MinBy(mount => Vector3.Distance(pawn.DrawPos, mount.DrawPos));
-                if (closest == null) 
+                if (closest == null)
                     continue;
 
                 mappedMounts[pawn] = closest;
@@ -60,47 +58,41 @@ namespace GiddyUpCore.SaddleUp
             //Next closest
             var mountDistances = pawns
                 .SelectMany(rider =>
-                    mounts.Select(mount => new MountPairing(rider, mount, Vector3.Distance(rider.DrawPos, mount.DrawPos))))
+                    mounts.Where(mount => CanRide(rider, mount))
+                        .Select(mount => new MountPairing(rider, mount, Vector3.Distance(rider.DrawPos, mount.DrawPos))))
                 .OrderBy(x => x.Distance)
                 .ToList();
-            
+
             var usedRiders = new HashSet<Pawn>();
             var usedMounts = new HashSet<Pawn>();
-            var grouped = new List<MountPairing>();
 
             foreach (var pairing in mountDistances)
             {
                 if (usedRiders.Contains(pairing.Rider) || usedMounts.Contains(pairing.Mount))
                     continue;
 
-                grouped.Add(pairing);
+                mappedMounts[pairing.Rider] = pairing.Mount;
                 usedRiders.Add(pairing.Rider);
                 usedMounts.Add(pairing.Mount);
             }
 
-            mappedMounts.AddRange(grouped.ToDictionary(x => x!.Rider, x => x!.Mount));
-
             foreach (var (rider, mount) in mappedMounts)
             {
-                var jobs = rider.jobs;
-                var job = new Job(ResourceBank.JobDefOf.Mount, mount);
-                job.count = 1;
-                var tag = new JobTag?(JobTag.Misc);
-                jobs.TryTakeOrderedJob(job, tag);
-                SoundDef.Named("horsesnore").PlayOneShotOnCamera();
+                var job = new Job(ResourceBank.JobDefOf.Mount, mount) { count = 1 };
+                rider.jobs.TryTakeOrderedJob(job, JobTag.Misc);
             }
+
+            if (mappedMounts.Count > 0)
+                SoundDef.Named("horsesnore").PlayOneShotOnCamera();
         }
+
+        private static bool CanRide(Pawn rider, Pawn mount) =>
+            mount.IsMountable(out _, rider, checkTraining: mount.RaceProps.Animal);
 
         public void MountPawn(Pawn pawn)
         {
             MonitoredPawns.Add(pawn);
             WakeUp = true;
-
-            if (!Find.TickManager.Paused) 
-                return;
-
-            Find.TickManager.TogglePaused();
-            DoNow = true;
         }
     }
 }

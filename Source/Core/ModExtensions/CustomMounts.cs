@@ -18,8 +18,9 @@ public class CustomMounts : DefModExtension
         base.ResolveReferences(parentDef);
         possibleMounts.RemoveAll(x =>
         {
+            //Was "!mechanoidsEnabled || IsMechanoid", which kept everything when mechs were disabled
             if (x.Key.RaceProps.Animal ||
-                (!ModSettings_GiddyUp.mechanoidsEnabled || x.Key.RaceProps.IsMechanoid)) 
+                (ModSettings_GiddyUp.mechanoidsEnabled && x.Key.RaceProps.IsMechanoid))
                 return false;
 
             Log.Warning(

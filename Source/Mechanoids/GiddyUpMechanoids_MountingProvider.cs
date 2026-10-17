@@ -58,12 +58,11 @@ namespace GiddyUpMechanoids
             if (hasMountedTurret)
                 return [ new FloatMenuOption("GU_BME_Reason_Turret".Translate(), null) ];
 
-            // 4 — Has GiddyUp module?
-            var hasGiddyUpModule = (target.health.hediffSet.HasHediff(WhatTheHackDefOf.WTH_TargetingHacked) ||
-                                    target.health.hediffSet.HasHediff(WhatTheHackDefOf.WTH_TargetingHackedPoorly)) ==
-                                    target.health.hediffSet.HasHediff(GU_Mech_DefOf.GU_Mech_GiddyUpModule);
-
-            if (!hasGiddyUpModule)
+            // 4 — What The Hack mechs need the GiddyUp module; overseer (Biotech) mechs don't.
+            //     Was a boolean == comparison, which also rejected a Biotech mech that had the module.
+            var needsModule = target.health.hediffSet.HasHediff(WhatTheHackDefOf.WTH_TargetingHacked) ||
+                              target.health.hediffSet.HasHediff(WhatTheHackDefOf.WTH_TargetingHackedPoorly);
+            if (needsModule && !target.health.hediffSet.HasHediff(GU_Mech_DefOf.GU_Mech_GiddyUpModule))
                 return [ new FloatMenuOption("GU_BME_Reason_NoModule".Translate(), null)];
 
             // 5 — Check "mountable in mod options" for the target mech

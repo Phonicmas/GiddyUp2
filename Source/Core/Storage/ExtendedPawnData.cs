@@ -90,6 +90,7 @@ public class ExtendedPawnData : IExposable
 
         Scribe_Values.Look(ref ID, "ID");
         Scribe_Values.Look(ref automount, "automount", Automount.Anyone);
+        Scribe_Values.Look(ref canRide, "canRide", true); //Was never saved, so the "allowed to ride" column reset on load
         Scribe_Values.Look(ref drawOffset, "drawOffset");
 
         if (Scribe.mode == LoadSaveMode.PostLoadInit)

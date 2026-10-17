@@ -79,11 +79,13 @@ internal static class Patch_DetermineNextJob
                 if (hostileMount == null || hostileMount.Map == null || !hostileMount.IsMountable(out var reason, pawn, true, true))
                     return;
                 var qJob = pawn.jobs.jobQueue.FirstOrFallback(null);
-                if (qJob?.job.def == ResourceBank.JobDefOf.Mount ||
-                    __result.Job?.def == ResourceBank.JobDefOf.Mount)
+                if (__result.Job == null || pawn.CurJobDef == ResourceBank.JobDefOf.Mount ||
+                    qJob?.job.def == ResourceBank.JobDefOf.Mount || __result.Job.def == ResourceBank.JobDefOf.Mount)
                     return;
 
-                pawn.GoMount(hostileMount);
+                //Return the Mount job through the ThinkResult. Calling StartJob from inside DetermineNextJob gets the
+                //job killed as soon as the tracker starts the result it was about to use.
+                __result = pawn.GoMount(hostileMount, MountUtility.GiveJobMethod.Inject, __result, __result.Job)!.Value;
             }
             else if (Settings.rideAndRollEnabled && pawn.Faction.def.isPlayer && pawn.Map?.Biome.inVacuum == false)
             {
@@ -111,8 +113,8 @@ internal static class Patch_DetermineNextJob
             if (lord == null)
                 return;
 
-            if (pawn.RaceProps.Animal && thinkResult.SourceNode is JobGiver_Wander jobGiver_Wander &&
-                lord.CurLordToil is LordToil_DefendPoint)
+            if (pawn.RaceProps.Animal && thinkResult.SourceNode is JobGiver_Wander &&
+                lord.CurLordToil is LordToil_DefendPoint && pawn.mindState.duty != null)
             {
                 var trader = TraderCaravanUtility.FindTrader(lord);
                 //Unroped guest animals too far from their owners, go return
@@ -120,7 +122,8 @@ internal static class Patch_DetermineNextJob
                     !pawn.IsRoped())
                     pawn.mindState.duty = new PawnDuty(DutyDefOf.Follow, trader, 5f);
                 else
-                    jobGiver_Wander.wanderRadius = 5f;
+                    //Set on the duty, not the JobGiver: that node is shared by every pawn that wanders through it
+                    pawn.mindState.duty.wanderRadius = 5f;
             }
 
             //Filter out anything that is not a guest rider

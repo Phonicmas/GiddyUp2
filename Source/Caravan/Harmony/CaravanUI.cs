@@ -1,6 +1,7 @@
 ﻿using GiddyUp;
 using HarmonyLib;
 using RimWorld;
+using RimWorld.Planet;
 using System;
 using System.Collections.Generic;
 using System.Reflection.Emit;
@@ -22,15 +23,21 @@ internal static class Patch_TransferableOneWayWidget
     private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
     {
         var flag = false;
+        var done = false;
         foreach (var code in instructions)
         {
             yield return code;
 
+            if (done)
+                continue;
             if (code.OperandIs(AccessTools.Method(typeof(TooltipHandler), nameof(TooltipHandler.TipRegion),
                     new Type[] { typeof(Rect), typeof(TipSignal) })))
                 flag = true;
+            //Only the first TipRegion → stloc.0 (the count column). DoRow has two more such sites, so slave rows
+            //used to get the selector injected twice.
             if (flag && code.opcode == OpCodes.Stloc_0)
             {
+                done = true;
                 //TODO: Improve this to be less fragile
                 yield return new CodeInstruction(OpCodes.Ldarg_0); //Load instance
                 yield return new CodeInstruction(OpCodes.Ldloc_0); //load count local variable
@@ -44,46 +51,53 @@ internal static class Patch_TransferableOneWayWidget
         }
     }
 
+    //TransferableOneWayWidget is also used by the transporter and portal dialogs; the mount selector only belongs in
+    //the caravan ones.
+    private static bool InCaravanDialog() =>
+        Find.WindowStack.IsOpen<Dialog_FormCaravan>() || Find.WindowStack.IsOpen<Dialog_SplitCaravan>();
+
+    //Pawn lists are built once per widget per frame instead of once per row
+    private static TransferableOneWayWidget? cachedWidget;
+    private static int cachedFrame = -1;
+    private static readonly List<Pawn> CachedRiders = [];
+    private static readonly List<Pawn> CachedAllPawns = [];
+    //Last seen CountToTransfer per row, so reservations are only touched when the player changes a selection
+    private static readonly Dictionary<TransferableOneWay, int> LastCounts = new();
+
     public static float AddMountSelector(TransferableOneWayWidget widget, float num, Rect rect, TransferableOneWay trad)
     {
         var buttonWidth = 75f;
 
-        if (trad.AnyThing is not Pawn pawn)
+        if (trad.AnyThing is not Pawn pawn || !InCaravanDialog())
             return num; //not an animal, return; 
 
         var buttonRect = new Rect(num - buttonWidth, 0f, buttonWidth, rect.height);
-        var cachedTransferables = new List<TransferableOneWay>();
-        var animalTransferables = new List<TransferableOneWay>();
-        foreach (var section in widget.sections)
+        if (widget != cachedWidget)
         {
-            var title = section.title;
-            //This is mainly for mods that add new sections such as Colony Groups
-            if (title != "Capture" && title != "Prisoners")
-            {
-                if(title != "Animals" && title != "Mechanoids")
-                    cachedTransferables.AddRange(section.cachedTransferables);
-                else
-                    animalTransferables.AddRange(section.cachedTransferables);
-            }
+            cachedWidget = widget;
+            cachedFrame = -1;
+            LastCounts.Clear();
         }
-
-        var pawns = new List<Pawn>();
-
-        foreach (var tow in cachedTransferables)
+        if (cachedFrame != Time.frameCount)
         {
-            if (tow.AnyThing is Pawn towPawn)
-                pawns.Add(towPawn);
+            cachedFrame = Time.frameCount;
+            CollectPawns(widget);
         }
-
-        var allPawns = new List<Pawn>(pawns);
-        foreach (var tow in animalTransferables)
-        {
-            if(tow.AnyThing is Pawn animal)
-                allPawns.Add(animal);
-        }
+        var pawns = CachedRiders;
 
         //It quacks like a duck, so it is one!
-        SetSelectedForCaravan(pawn, trad, allPawns);
+        var count = trad.CountToTransfer;
+        if (!LastCounts.TryGetValue(trad, out var lastCount))
+        {
+            LastCounts[trad] = count;
+            SetSelectedForCaravan(pawn, trad, CachedAllPawns, false);
+        }
+        else if (lastCount != count)
+        {
+            LastCounts[trad] = count;
+            SetSelectedForCaravan(pawn, trad, CachedAllPawns, lastCount > 0);
+        }
+
         if (pawn.RaceProps.Animal && pawns.Count > 0)
             HandleAnimal(num, buttonRect, pawn, pawns, trad);
         else
@@ -92,18 +106,45 @@ internal static class Patch_TransferableOneWayWidget
         return num - (buttonWidth - 25f);
     }
 
-    private static void SetSelectedForCaravan(Pawn pawn, TransferableOneWay trad, List<Pawn> pawns)
+    private static void CollectPawns(TransferableOneWayWidget widget)
+    {
+        CachedRiders.Clear();
+        CachedAllPawns.Clear();
+        foreach (var section in widget.sections)
+        {
+            var title = section.title;
+            //This is mainly for mods that add new sections such as Colony Groups
+            if (title == "Capture" || title == "Prisoners")
+                continue;
+            var animals = title == "Animals" || title == "Mechanoids";
+            foreach (var tow in section.cachedTransferables)
+            {
+                if (tow.AnyThing is not Pawn towPawn)
+                    continue;
+                if (!animals)
+                    CachedRiders.Add(towPawn);
+                CachedAllPawns.Add(towPawn);
+            }
+        }
+    }
+
+    private static void SetSelectedForCaravan(Pawn pawn, TransferableOneWay trad, List<Pawn> pawns, bool wasSelected)
     {
         var pawnData = pawn.GetExtendedPawnData();
         var reservedMount = pawnData.ReservedMount;
 
-        if (trad.CountToTransfer == 0) //unset pawndata when pawn is not selected for caravan. 
+        if (trad.CountToTransfer == 0)
         {
             pawnData.selectedForCaravan = false;
-            if (reservedMount != null)
-                UnsetDataForRider(pawnData);
-            if (pawnData.ReservedBy != null)
-                UnsetDataForMount(pawnData);
+            //Only drop the links when the player deselected the pawn. Running this for every unselected row used to
+            //wipe live Ride and Roll reservations just by opening the dialog.
+            if (wasSelected)
+            {
+                if (reservedMount != null)
+                    UnsetDataForRider(pawnData);
+                if (pawnData.ReservedBy != null)
+                    UnsetDataForMount(pawnData);
+            }
         }
 
         if (reservedMount != null && (reservedMount.Dead || reservedMount.Downed))
@@ -147,7 +188,8 @@ internal static class Patch_TransferableOneWayWidget
                 return false;
             
             var mountData = x.GetExtendedPawnData();
-            return x.IsMountable(out _, rider) && mountData is { selectedForCaravan: true, ReservedBy: null };
+            //Caravan pawns in the split dialog aren't spawned, so skip the on-map state checks for them
+            return x.IsMountable(out _, rider, x.Spawned) && mountData is { selectedForCaravan: true, ReservedBy: null };
         });
 
     private static void UnsetDataForRider(ExtendedPawnData pawnData)
@@ -286,8 +328,13 @@ internal static class Patch_TransferableUtility
         return Settings.caravansEnabled;
     }
 
-    private static bool Postfix(bool __result, Thing a, Thing b)
+    private static bool Postfix(bool __result, Thing a, Thing b, TransferAsOneMode mode)
     {
+        //Keep mounts as separate rows for caravans and pods only; trade windows used to be affected too.
+        //Dialog_SplitCaravan builds its rows in Normal mode, so allow that while it is open.
+        if (mode != TransferAsOneMode.PodsOrCaravanPacking &&
+            !(mode == TransferAsOneMode.Normal && Find.WindowStack.IsOpen<Dialog_SplitCaravan>()))
+            return __result;
         if (__result && a.def.category == ThingCategory.Pawn && b.def.category == ThingCategory.Pawn &&
             (IsMountableUtility.IsEverMountable((Pawn)a) || IsMountableUtility.IsEverMountable((Pawn)b)))
             return false;

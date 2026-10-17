@@ -44,13 +44,7 @@ public class JobDriver_Mount : JobDriver
         if (pawn.interactions != null)
             yield return Toils_Interpersonal.WaitToBeAbleToInteract(pawn);
         yield return TalkToAnimal();
-        yield return new Toil()
-        {
-            finishActions =
-            [
-                delegate { MountedRiderRenderNodeUtility.RefreshMountedAnimalGraphics(TargetPawnA); }
-            ]
-        };
+        yield return FinishMounting();
     }
 
     private Toil LetMountParticipate()
@@ -93,20 +87,31 @@ public class JobDriver_Mount : JobDriver
             {
                 var actor = GetActor();
                 actor.interactions?.TryInteractWith(mount, InteractionDefOf.AnimalChat);
-            },
-            finishActions = new List<Action>
-            {
-                delegate
-                {
-                    //Final checks
-                    if (!pawn.CanReserve(mount) || //Can reserve?
-                        (mount.GetExtendedPawnData().ReservedBy != pawn &&
-                         mount.IsFormingCaravan()) || //Involved in someone else's caravan?
-                        mount.Faction != pawn.Faction) //Switched factions mid-step? (quests)
-                        return;
+            }
+        };
+    }
 
-                    pawn.GoMount(mount, MountUtility.GiveJobMethod.Instant);
-                }
+    //Used to live in TalkToAnimal's finishActions, which also run when the job fails, so a rider could end up
+    //mounted on a downed or departed animal. An instant toil only runs when the delay actually completed.
+    private Toil FinishMounting()
+    {
+        return new Toil
+        {
+            defaultCompleteMode = ToilCompleteMode.Instant,
+            initAction = delegate
+            {
+                var mount = Mount;
+                if (mount == null)
+                    return;
+                //Final checks
+                if (!pawn.CanReserve(mount) || //Can reserve?
+                    (mount.GetExtendedPawnData().ReservedBy != pawn &&
+                     mount.IsFormingCaravan()) || //Involved in someone else's caravan?
+                    mount.Faction != pawn.Faction) //Switched factions mid-step? (quests)
+                    return;
+
+                pawn.GoMount(mount, MountUtility.GiveJobMethod.Instant);
+                MountedRiderRenderNodeUtility.RefreshMountedAnimalGraphics(mount);
             }
         };
     }

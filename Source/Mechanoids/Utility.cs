@@ -14,82 +14,12 @@ namespace GiddyUpMechanoids
 {
     public static class Utility
     {
-        private static readonly HashSet<JobDef> busyJobs = new()
-        {
-            ResourceBank.JobDefOf.Mounted,
-            JobDefOf.LayEgg,
-            JobDefOf.Nuzzle,
-            JobDefOf.Lovin,
-            JobDefOf.Vomit,
-            JobDefOf.Wait_Downed
-        };
-
-        #region Mounting Checks
-
-        public static bool IsMountableMech(this Pawn mech, out Reason reason, Pawn rider, bool checkState = true, bool checkFaction = false)
-        {
-            reason = Reason.CanMount;
-
-            if (checkFaction && mech.Faction != rider.Faction)
-            {
-                reason = Reason.WrongFaction;
-                return false;
-            }
-
-            if (checkState)
-            {
-                if (busyJobs.Contains(mech.CurJobDef) && mech.CurJobDef != ResourceBank.JobDefOf.Mounted)
-                {
-                    reason = Reason.IsBusy;
-                    return false;
-                }
-
-                var mechData = mech.GetExtendedPawnData();
-                if(mechData.ReservedBy != null && mech.CurJobDef != ResourceBank.JobDefOf.WaitForRider)
-                {
-                    Log.Warning("[GiddyUp2] Found reserved mech not waiting for rider, this should not happen.");
-                    mechData.ReservedBy = null;
-                }
-                if (mechData.ReservedBy != null && mechData.ReservedBy != rider && (mechData.ReservedBy.CurJobDef != ResourceBank.JobDefOf.Mount || mechData.ReservedBy.GetExtendedPawnData()?.ReservedMount != mech))
-                {
-                    reason = Reason.MountedByAnother;
-                    return false;
-                }
-
-                if (mech.roping?.IsRopedByPawn == true)
-                {
-                    reason = Reason.IsRoped;
-                    return false;
-                }
-
-                var lord = mech.GetLord();
-                if (lord != null && lord.LordJob is LordJob_FormAndSendCaravan && mechData.ReservedBy != rider)
-                {
-                    reason = Reason.IsBusyWithCaravan;
-                    return false;
-                }
-
-                if (mech.Dead || mech.Downed || mech.InMentalState || !mech.Spawned
-                    || (mech.health != null && mech.health.summaryHealth.SummaryHealthPercent < ModSettings_GiddyUp.injuredThreshold)
-                    || mech.health.HasHediffsNeedingTend()
-                    || mech.HasAttachment(ThingDefOf.Fire))
-                {
-                    reason = Reason.IsPoorCondition;
-                    return false;
-                }
-            }
-
-            if (rider != null && rider.IsTooHeavy(mech))
-            //if (rider != null && Utility.IsTooHeavy(rider, mech))
-            {
-                reason = Reason.TooHeavy;
-                return false;
-            }
-
-            return true;
-        }
-
-        #endregion
+        /// <summary>
+        /// Mech mountability check, kept for existing callers. Uses Core's IsMountable; mechs have no training.
+        /// </summary>
+        public static bool IsMountableMech(this Pawn mech, out Reason reason, Pawn rider, bool checkState = true,
+            bool checkFaction = false) =>
+            mech.IsMountable(out reason, rider, checkState, checkFaction, false);
 
         #region FloatMenu
 
@@ -124,13 +54,16 @@ namespace GiddyUpMechanoids
                 return opts.GenerateFloatMenuOption(text);
             }
 
-            bool isMountable = mech.IsMountableMech(out var mechReason, rider, true, true);
+            //The old mech-only check cleared the reservation of any mech that was being ridden; Core's check handles mechs
+            bool isMountable = mech.IsMountable(out var mechReason, rider, true, true, false);
 
             if (!isMountable)
             {
                 string reasonText = mechReason switch
                 {
-                    Reason.IsBusy => "GUC_AnimalBusy".Translate(),
+                    Reason.IsBusy or Reason.MountedByAnother or Reason.IsReserved or Reason.IsBusyWithCaravan =>
+                        "GUC_AnimalBusy".Translate(),
+                    Reason.NotInModOptions => "GUC_NotInModOptions".Translate(),
                     Reason.IsRoped => "GUC_IsRoped".Translate(),
                     Reason.IsPoorCondition => "GUC_IsPoorCondition".Translate(),
                     Reason.TooHeavy => "GUC_TooHeavy".Translate(),

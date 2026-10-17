@@ -121,12 +121,26 @@ public static class MountUtility
         if (animal == null)
             return;
         
+        var animalData = animal.GetExtendedPawnData();
+
+        //Drop the old links first so no third pawn is left pointing at this pair
+        if (pawnData.ReservedMount is { } oldMount && oldMount != animal)
+        {
+            var oldMountData = oldMount.GetExtendedPawnData();
+            if (oldMountData.ReservedBy == rider)
+                oldMountData.ReservedBy = null;
+        }
+        if (animalData.ReservedBy is { } oldRider && oldRider != rider)
+        {
+            var oldRiderData = oldRider.GetExtendedPawnData();
+            if (oldRiderData.ReservedMount == animal)
+                oldRiderData.ReservedMount = null;
+        }
+
         //Instantly mount, as if the mount jobDriver had just finished
         pawnData.Mount = animal;
         ExtendedDataStorage.isMounted.Add(rider.thingIDNumber);
         pawnData.ReservedMount = animal;
-
-        var animalData = animal.GetExtendedPawnData();
         animalData.ReservedBy = rider;
         animalData.Rider = rider;
 
@@ -273,15 +287,16 @@ public static class MountUtility
         else
             animalData = animal.GetExtendedPawnData();
 
-        //Reservation handling
+        //Reservation handling. Only clear the animal's side if it still points at this rider; another pawn may have
+        //taken the animal since.
         if (clearReservation)
         {
             pawnData.ReservedMount = null;
-            if(animalData != null)
+            if (animalData != null && animalData.ReservedBy == rider)
                 animalData.ReservedBy = null;
         }
 
-        if(animalData != null)
+        if (animalData != null && animalData.Rider == rider)
             animalData.Rider = null;
 
         //Reset free locomotion
@@ -544,12 +559,12 @@ public static class MountUtility
                             out pawnKindDef);
             }
 
-            //Validate and spawn
+            //Validate and spawn. One rider without a fit used to abort mounts for everyone after it.
             if (pawnKindDef == null)
             {
                 if (Settings.logging)
                     Log.Warning("[Giddy-Up] Could not find any suitable animal for " + pawn.thingIDNumber);
-                return false;
+                continue;
             }
 
             animal = PawnGenerator.GeneratePawn(pawnKindDef, parms.faction);
@@ -701,7 +716,7 @@ public static class MountUtility
                 ++count;
             }
 
-            return sum / count;
+            return count == 0 ? 0f : sum / count; //Biomes without wild animals (space) gave NaN
         }
 
         float CalculateCommonality(PawnKindDef def, BiomeDef biome, int pawnHandlingLevel, float averageCommonality = 0)

@@ -106,9 +106,9 @@ public static class IsMountableUtility
                 //Is that job mounted?
                 if (animal.CurJobDef == ResourceBank.JobDefOf.Mounted)
                 {
-                    //Is the rider of this mounted job this same pawn? Skip
+                    //Is the rider of this mounted job this same pawn? Skip. Used to skip for any rider on the way.
                     var animalData = animal.GetExtendedPawnData();
-                    if (animalData.ReservedBy != null &&
+                    if (animalData.ReservedBy != null && animalData.ReservedBy == rider &&
                         animalData.ReservedBy.CurJobDef == ResourceBank.JobDefOf.Mount &&
                         animalData.ReservedBy.GetExtendedPawnData().ReservedMount == animal)
                     {
@@ -293,21 +293,23 @@ public static class IsMountableUtility
 
     public static bool IsInPoorCondition(this Pawn animal)
     {
+        //Returned false here before, which let downed and berserk animals through as mountable
         if (animal.Dead || animal.Downed || animal.InMentalState || !animal.Spawned)
-            return false;
+            return true;
 
         if (animal.health != null && injuredThreshold > 0)
         {
-            if(animal.health.summaryHealth.SummaryHealthPercent < injuredThreshold ||
-               animal.health.hediffSet.hediffs.Any(x => x.CurStage is not null && animal.health.HasHediffsNeedingTend()))
-            return true;
+            //Was an Any() over every hediff that re-ran HasHediffsNeedingTend each time
+            if (animal.health.summaryHealth.SummaryHealthPercent < injuredThreshold ||
+                animal.health.HasHediffsNeedingTend())
+                return true;
         }
 
         if (animal.HasAttachment(ThingDefOf.Fire))
             return true;
 
         // ReSharper disable once InvertIf
-        if (animal.Faction.IsPlayer)
+        if (animal.Faction?.IsPlayer == true)
         {
             if (animal.needs.food is { CurCategory: >= HungerCategory.UrgentlyHungry } ||
                 animal.needs.rest is { CurCategory: >= RestCategory.VeryTired })

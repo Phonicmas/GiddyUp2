@@ -1,194 +1,69 @@
 ﻿using HarmonyLib;
 using RimWorld;
 using Verse;
-using Verse.AI;
 using System.Collections.Generic;
-using System.Linq;
 using GiddyUp;
 using GiddyUpCore.Compatibility.WhatTheHack;
+using Settings = GiddyUp.ModSettings_GiddyUp;
 
 namespace GiddyUpMechanoids
 {
-    [HarmonyPatch(typeof(IncidentWorker_Raid), "PostProcessSpawnedPawns")]
+    //Mounts raiders on the hacked mechs that arrived with them
+    [HarmonyPatch(typeof(IncidentWorker_Raid), nameof(IncidentWorker_Raid.PostProcessSpawnedPawns))]
     public static class Patch_Raid_PostProcessSpawned
     {
-        private const string LOG_POSTFIX = "[GiddyUpMechanoids] ";
+        private static readonly List<Pawn> TmpMechs = [];
+        private static readonly List<Pawn> TmpRiders = [];
 
-        public static bool Prepare() => ModSettings_GiddyUp.mechanoidsEnabled && Extensions.WhatTheHackEnabled;
+        public static bool Prepare() => Settings.mechanoidsEnabled && Extensions.WhatTheHackEnabled;
 
-        public static void Postfix(IncidentWorker_Raid __instance, IncidentParms parms, List<Pawn> pawns)
+        public static void Postfix(IncidentParms parms, List<Pawn> pawns)
         {
-            Log.Message(LOG_POSTFIX + "Postfix triggered.");
-
-            if (parms == null)
-            {
-                Log.Warning(LOG_POSTFIX + "IncidentParms is NULL.");
+            if (parms == null || pawns == null || pawns.Count == 0)
                 return;
-            }
 
-            PawnsArrivalModeDef mode = parms.raidArrivalMode;
-            Log.Message(LOG_POSTFIX + $"RaidArrivalMode: {mode}");
-
-            if (mode == PawnsArrivalModeDefOf.EdgeWalkIn
-    || mode == PawnsArrivalModeDefOf.EdgeWalkInGroups
-    || mode == PawnsArrivalModeDefOf.EdgeWalkInDarkness)
-            {
-                // valid mode
-            }
-            else
-            {
-                Log.Message(LOG_POSTFIX + "RaidArrivalMode is not EdgeWalkIn, EdgeWalkInGroups or EdgeWalkInDarkness. Exiting.");
+            var mode = parms.raidArrivalMode;
+            if (mode != PawnsArrivalModeDefOf.EdgeWalkIn && mode != PawnsArrivalModeDefOf.EdgeWalkInGroups &&
+                mode != PawnsArrivalModeDefOf.EdgeWalkInDarkness)
                 return;
-            }
 
-            if (pawns == null || pawns.Count == 0)
+            TmpMechs.Clear();
+            TmpRiders.Clear();
+            foreach (var pawn in pawns)
             {
-                Log.Warning(LOG_POSTFIX + "Pawns list is null or empty.");
-                return;
+                if (Extensions.IsHacked(pawn))
+                    TmpMechs.Add(pawn);
+                else if (pawn.RaceProps.Humanlike && !pawn.IsMounted())
+                    TmpRiders.Add(pawn);
             }
 
-            Log.Message(LOG_POSTFIX + $"Total pawns arrived: {pawns.Count}");
+            if (Settings.logging)
+                Log.Message($"[Giddy-Up] Mech raid: {TmpMechs.Count} hacked mechs, {TmpRiders.Count} possible riders");
 
-            var storage = Find.World?.GetComponent<ExtendedDataStorage>();
-
-            if (storage == null)
+            var chance = Settings.mountChance / 100f;
+            foreach (var mech in TmpMechs)
             {
-                Log.Warning(LOG_POSTFIX + "ExtendedDataStorage is NULL.");
-                return;
+                if (TmpRiders.Count == 0)
+                    break;
+                if (!Settings.MechSelectedCache.Contains(mech.def.shortHash) || !Rand.Chance(chance))
+                    continue;
+                if (mech.GetExtendedPawnData().ReservedBy != null)
+                    continue;
+
+                var rider = TmpRiders[0];
+                TmpRiders.RemoveAt(0);
+
+                if (!mech.health.hediffSet.HasHediff(GU_Mech_DefOf.GU_Mech_GiddyUpModule))
+                    mech.health.AddHediff(GU_Mech_DefOf.GU_Mech_GiddyUpModule);
+
+                //Was a hand-rolled copy of Mount() that missed isMounted/Rider/drawOffset and then also queued jobs
+                rider.GoMount(mech, MountUtility.GiveJobMethod.Instant);
+                if (Settings.logging)
+                    Log.Message($"[Giddy-Up] {rider.LabelShort} mounted {mech.LabelShort}");
             }
 
-            var mechs = pawns.Where(p => Extensions.IsHacked(p)).ToList();
-            Log.Message(LOG_POSTFIX + $"Hacked mechs found: {mechs.Count}");
-
-            var humanlikes = pawns
-                .Where(h =>
-                {
-                    var pdata = h.GetExtendedPawnData();
-                    bool hasMount = pdata?.Mount != null;
-
-                    Log.Message(LOG_POSTFIX +
-                        $"Checking humanlike: {h.LabelShort} | Humanlike={h.RaceProps.Humanlike} | AlreadyMounted={hasMount}");
-
-                    return h.RaceProps.Humanlike && !hasMount;
-                })
-                .ToList();
-
-            Log.Message(LOG_POSTFIX + $"Eligible humanlike riders: {humanlikes.Count}");
-
-            foreach (var mech in mechs)
-            {
-                Log.Message(LOG_POSTFIX + $"Evaluating mech: {mech.LabelShort}");
-
-                float chance = ModSettings_GiddyUp.mountChance / 100f;
-                bool roll = Rand.Chance(chance);
-                bool allowed = ModSettings_GiddyUp.MechSelectedCache.Contains(mech.def.shortHash);               
-
-                Log.Message(LOG_POSTFIX +
-                    $"Mount roll={roll} (chance={chance}) | AllowedInSettings={allowed}");
-
-                if (roll && allowed)
-                {
-                    if (humanlikes.Count > 0)
-                    {
-                        var rider = humanlikes[0];
-                        humanlikes.RemoveAt(0);
-
-                        Log.Message(LOG_POSTFIX +
-                            $"Assigning rider {rider.LabelShort} to mech {mech.LabelShort}");
-
-                        AssignRider(mech, rider);
-                    }
-                    else
-                    {
-                        Log.Message(LOG_POSTFIX + "No eligible humanlikes remaining.");
-                    }
-                }
-            }
+            TmpMechs.Clear();
+            TmpRiders.Clear();
         }
-
-        private static void AssignRider(Pawn mech, Pawn rider)
-        {
-            if (mech == null || rider == null)
-            {
-                Log.Warning(LOG_POSTFIX + "AssignRider received null pawn.");
-                return;
-            }
-
-            Log.Message(LOG_POSTFIX + $"AssignRider start: {rider.LabelShort} -> {mech.LabelShort}");
-
-            var riderData = rider.GetExtendedPawnData();
-            var mechData = mech.GetExtendedPawnData();
-
-            if (riderData == null || mechData == null)
-            {
-                Log.Warning(LOG_POSTFIX + "Failed to retrieve GiddyUp ExtendedPawnData via reflection.");
-                return;
-            }
-
-            // Safety checks
-            if (riderData.Mount != null)
-            {
-                Log.Message(LOG_POSTFIX + $"{rider.LabelShort} already mounted. Skipping.");
-                return;
-            }
-
-            if (mechData.ReservedBy != null)
-            {
-                Log.Message(LOG_POSTFIX + $"{mech.LabelShort} already reserved. Skipping.");
-                return;
-            }
-
-            // Link both sides
-            riderData.Mount = mech;
-            riderData.ReservedMount = mech;
-            mechData.ReservedBy = rider;
-
-            Log.Message(LOG_POSTFIX + "Linked ExtendedPawnData mount fields.");
-
-            if (!mech.health.hediffSet.HasHediff(GU_Mech_DefOf.GU_Mech_GiddyUpModule))
-            {
-                mech.health.AddHediff(GU_Mech_DefOf.GU_Mech_GiddyUpModule);
-                Log.Message(LOG_POSTFIX + "Added GiddyUp module hediff.");
-            }
-
-            //Utility.ForceMountMech(rider, mech, riderData);
-
-            //var job = new Job(GU_Mech_DefOf.Mounted, rider) { count = 1 };
-            //mech.jobs?.StartJob(job, JobCondition.InterruptForced);
-
-
-            // ------------------------------------------------------------------
-            // Create & issue Mounted job to MECH
-            // ------------------------------------------------------------------
-            Job mountedJob = JobMaker.MakeJob(ResourceBank.JobDefOf.Mounted, rider);
-            mountedJob.count = 1;
-
-            bool mechAccepted = mech.jobs?.TryTakeOrderedJob(mountedJob, JobTag.Misc) ?? false;
-            if (!mechAccepted)
-            {
-                // Fallback: force start
-                mech.jobs?.StartJob(mountedJob, JobCondition.InterruptForced, cancelBusyStances: true);
-            }
-
-            // ------------------------------------------------------------------
-            // Create & issue Mount job to RIDER
-            // ------------------------------------------------------------------
-            Job mountJob = JobMaker.MakeJob(ResourceBank.JobDefOf.Mount, mech);
-            mountJob.count = 1;
-
-            rider.jobs?.TryTakeOrderedJob(mountJob, JobTag.Misc);
-
-            // ------------------------------------------------------------------
-            // Set mount link NOW (after jobs queued)
-            //    - The correct time to set this is right after jobs are issued.
-            //    - Required so JobDriver_Mount sees consistent mount state.
-            // ------------------------------------------------------------------
-            riderData.Mount = mech;
-
-            Log.Message(LOG_POSTFIX + "Started Mounted job.");
-
-            //GiddyUp.TextureUtility.SetDrawOffset(rider.ageTracker.CurKindLifeStage);
-        }
-
     }
 }
