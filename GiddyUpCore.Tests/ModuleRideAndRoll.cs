@@ -1,4 +1,5 @@
 using System.Collections;
+using DevTools;
 using DevTools.Testing;
 using GiddyUp;
 using GiddyUpRideAndRoll;
@@ -114,7 +115,7 @@ public class ModuleRideAndRoll : RiderAndMountTest
     [Test]
     public void FindClosestDismountSpot()
     {
-        using var hitchDistance = new ScopedValueRollback<int>(ref ModSettings_GiddyUp.autoHitchDistance);
+        using var hitchDistance = new ScopedRollback<int>(ref ModSettings_GiddyUp.autoHitchDistance);
         var map = Find.CurrentMap;
         var destination = map.Center + new IntVec3(8, 0, 0);
         var closestSpot = map.Center + new IntVec3(6, 0, 0);

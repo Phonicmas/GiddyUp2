@@ -1,4 +1,4 @@
 [submodule "DevTools"]
 	path = DevTools
 	username = MemeGoddess
-	url = http://192.168.20.15:5467/MemeGoddess/DevTools.git
+	url = https://github.com/MemeGoddess/DevTools.git

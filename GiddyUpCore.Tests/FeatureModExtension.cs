@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
+using DevTools;
 using DevTools.Testing;
 using DevTools.Testing.Utils;
 using GiddyUp;
@@ -20,11 +21,11 @@ public class FeatureModExtension : RiderAndMountTest
     [Test]
     public IEnumerator AllowedLifeStages()
     {
-        using var settingAgeRollback = new ScopedValueRollback<bool>(ref ModSettings_GiddyUp.disregardAnimalAge);
-        using var settingWeightRollback = new ScopedValueRollback<bool>(ref ModSettings_GiddyUp.disregardAnimalCarryingCapacity);
         var mountModExtensions = _mount.def.modExtensions;
         _mount.def.modExtensions = [];
         
+        var originalDisregardAnimalAge = ModSettings_GiddyUp.disregardAnimalAge;
+        var originalDisregardAnimalCarryingCapacity =  ModSettings_GiddyUp.disregardAnimalCarryingCapacity;
         ModSettings_GiddyUp.disregardAnimalAge = false;
         ModSettings_GiddyUp.disregardAnimalCarryingCapacity = true;
         _mount.health.Reset();
@@ -55,6 +56,8 @@ public class FeatureModExtension : RiderAndMountTest
         finally
         {
             _mount.def.modExtensions = mountModExtensions;
+            ModSettings_GiddyUp.disregardAnimalAge = originalDisregardAnimalAge;
+            ModSettings_GiddyUp.disregardAnimalCarryingCapacity = originalDisregardAnimalCarryingCapacity;
         }
     }
 
@@ -62,7 +65,6 @@ public class FeatureModExtension : RiderAndMountTest
     [SuppressMessage("ReSharper", "PossibleMultipleEnumeration")]
     public IEnumerator CustomStats()
     {
-        using var handlingRollback = new ScopedValueRollback<float>(ref ModSettings_GiddyUp.handlingMovementImpact);
         _rider.GoMount(_mount, MountUtility.GiveJobMethod.Instant);
         yield return new WaitTicks(1);
         ValidateIsMounted("setup");
@@ -75,6 +77,7 @@ public class FeatureModExtension : RiderAndMountTest
         var mountHealth = _mount.health.hediffSet.hediffs.Where(x => x.def.isBad);
         var part = _mount.RaceProps.body.AllParts.FirstOrDefault(x => x.def == BodyPartDefOf.Leg);
 
+        var originalHandlingMovementImpact = ModSettings_GiddyUp.handlingMovementImpact;
         try   
         {
             var des = Find.CurrentMap.AllCells.Last();
@@ -127,6 +130,7 @@ public class FeatureModExtension : RiderAndMountTest
         finally
         {
             _mount.kindDef.modExtensions = modExtensions;
+            ModSettings_GiddyUp.handlingMovementImpact = originalHandlingMovementImpact;
         }
     }
 

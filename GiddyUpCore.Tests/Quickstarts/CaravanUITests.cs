@@ -49,8 +49,8 @@ public class CaravanUITests
     }
 
     // [Test]
-    public IEnumerator SetRiderButtonRenders()
-    {
-        yield return ScreenshotCamera.TakeUIScreenshot(Path.Combine(ArtefactDir, nameof(SetRiderButtonRenders) + ".png"), _dialog, Patch);
-    }
+    // public IEnumerator SetRiderButtonRenders()
+    // {
+    //     yield return ScreenshotCamera.TakeUIScreenshot(Path.Combine(ArtefactDir, nameof(SetRiderButtonRenders) + ".png"), _dialog, Patch);
+    // }
 }

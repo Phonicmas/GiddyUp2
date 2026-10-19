@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using DevTools;
 using DevTools.Testing;
 using DevTools.Testing.Utils;
 using GiddyUp;
@@ -82,7 +83,7 @@ public class FeatureAnimalMounting : RiderAndMountTest
     [Test]
     public void AutoMount()
     {
-        using var distanceRollback = new ScopedValueRollback<int>(ref ModSettings_GiddyUp.minAutoMountDistance);
+        using var distanceRollback = new ScopedRollback<int>(ref ModSettings_GiddyUp.minAutoMountDistance);
         var destination = Find.CurrentMap.AllCells.MaxBy(cell => cell.DistanceTo(_rider.Position));
 
 

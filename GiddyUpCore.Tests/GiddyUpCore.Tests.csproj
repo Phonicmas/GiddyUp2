@@ -20,6 +20,9 @@
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
         <OutputPath>..\$(Version)\Assemblies</OutputPath>
         <DefineConstants>TRACE;DEBUG;NETFRAMEWORK;NET48;</DefineConstants>
+        <DebugSymbols>true</DebugSymbols>
+        <DebugType>portable</DebugType>
+        <Optimize>false</Optimize>
     </PropertyGroup>
 
     <ItemGroup>

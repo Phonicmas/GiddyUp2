@@ -29,16 +29,15 @@ public class ModuleBattleMounts
     [Test]
     public IEnumerator RaidersSpawnMounted()
     {
-        
-        using var rollback = new ScopedValueRollback<int>(ref ModSettings_GiddyUp.enemyMountChancePreInd);
         var faction = Current.Game.World.factionManager.AllFactions
             .FirstOrDefault(x =>
                 x.HostileTo(Faction.OfPlayer) && x.def.techLevel < TechLevel.Industrial);
         Expect.IsNotNull(faction, "Unable to find PreInd faction that is hostile to player to test with");
         
-        using var animalFlee = new ScopedValueRollback<bool>(ref faction!.def.animalsFleeDanger);
+        var originalAnimalFlee = faction!.def.animalsFleeDanger;
         faction.def.animalsFleeDanger = false;
         // TODO MountUtility rolls 1..100 and skips when chance <= roll; 101 guarantees this integration path.
+        var originalEnemyMountChancePreInd = ModSettings_GiddyUp.enemyMountChancePreInd;
         ModSettings_GiddyUp.enemyMountChancePreInd = 101;
         var incidentParms = new IncidentParms()
         {
@@ -59,6 +58,8 @@ public class ModuleBattleMounts
         finally
         {
             Rand.PopState();
+            ModSettings_GiddyUp.enemyMountChancePreInd = originalEnemyMountChancePreInd;
+            faction.def.animalsFleeDanger = originalAnimalFlee;
         }
         yield return new WaitUntilTimeout(() => raiders.Any(raider => raider.Spawned));
         Expect.Any(raiders, raider => raider.IsMounted(), "No raiders are mounted");
@@ -67,10 +68,8 @@ public class ModuleBattleMounts
     [Test]
     public IEnumerator EnemyFactionAmbushSpawnsMounted()
     {
-        using var rollback =
-            new ScopedValueRollback<int>(ref ModSettings_GiddyUp.enemyMountChancePreInd);
-
         // TODO MountUtility rolls 1..100 and skips when chance <= roll; 101 guarantees this integration path.
+        var originalEnemyMountChancePreInd = ModSettings_GiddyUp.enemyMountChancePreInd;
         ModSettings_GiddyUp.enemyMountChancePreInd = 101;
         var faction = Current.Game.World.factionManager.AllFactions
             .FirstOrDefault(x =>
@@ -103,6 +102,7 @@ public class ModuleBattleMounts
         finally
         {
             Rand.PopState();
+            ModSettings_GiddyUp.enemyMountChancePreInd = originalEnemyMountChancePreInd;
         }
 
         yield return new WaitUntilTimeout(() =>

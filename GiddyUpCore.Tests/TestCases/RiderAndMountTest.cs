@@ -10,24 +10,26 @@ public abstract class RiderAndMountTest
 {
     protected Pawn _rider = null!, _mount = null!;
     protected ExtendedPawnData _riderData = null!, _mountData = null!;
-    private ScopedValueRollback<bool> animalFlee;
 
     protected abstract Faction FactionOfPawns { get; }
     protected virtual PawnKindDef AnimalKind => PawnKindDef.Named("Horse");
+    private bool animalsFleeDanger;
     
     [OneTimeSetUp]
     public void OneTimeSetup()
     {
         Tweaker.SuperFast = true;
         if (FactionOfPawns == Faction.OfPlayer) return;
-        
-        animalFlee = new ScopedValueRollback<bool>(ref FactionOfPawns.def.animalsFleeDanger);
+        animalsFleeDanger = FactionOfPawns.def.animalsFleeDanger;
         FactionOfPawns.def.animalsFleeDanger = false;
     }
 
     [OneTimeTearDown]
-    public void OneTimeTearDown() => 
+    public void OneTimeTearDown()
+    {
         Tweaker.SuperFast = false;
+        FactionOfPawns.def.animalsFleeDanger = animalsFleeDanger;
+    }
 
     [SetUp]
     public void Setup()
@@ -47,7 +49,10 @@ public abstract class RiderAndMountTest
         GenSpawn.Spawn(_mount, map.Center, map);
         
         if(_mount.RaceProps.IsMechanoid)
+        {
+            _rider.health.AddHediff(HediffDefOf.MechlinkImplant);
             _rider.relations.AddDirectRelation(PawnRelationDefOf.Overseer, _mount);
+        }
 
         _riderData = _rider.GetExtendedPawnData();
         _mountData = _mount.GetExtendedPawnData();
@@ -67,14 +72,19 @@ public abstract class RiderAndMountTest
         map.mapPawns.PawnsInFaction(Faction.OfPlayer).ForEach(x => x.Destroy());
     }
 
-    protected void ValidateIsMounted(string? context = null, bool checkReservations = false)
+    protected void ValidateIsMounted(string? context = null, bool checkReservations = false, bool checkBindings = true)
     {
         var suffix = context is null ? string.Empty : $" ({context})";
         Expect.IsTrue(_rider.IsMounted(), "Rider is not mounted" + suffix);
         Expect.IsTrue(_mount.IsMountedAnimal(out var actualRider), "Animal was not actually mounted" + suffix);
-        Expect.AreEqual(_riderData.Mount, _mount, "Rider's data showed a different animal" + suffix);
-        Expect.AreEqual(_mountData.Rider, _rider, "Animal's data showed a different rider" + suffix);
-        Expect.AreEqual(_rider, actualRider, "Animal was mounted by another rider" + suffix);
+        if(checkBindings)
+        {
+            Expect.AreEqual(_riderData.Mount, _mount,
+                "Rider's data showed a different animal" + suffix);
+            Expect.AreEqual(_mountData.Rider, _rider,
+                "Animal's data showed a different rider" + suffix);
+            Expect.AreEqual(_rider, actualRider, "Animal was mounted by another rider" + suffix);
+        }
         Expect.AreEqual(ResourceBank.JobDefOf.Mounted, _mount.CurJobDef, "Animal does not have mounted job");
 
         if (!checkReservations)

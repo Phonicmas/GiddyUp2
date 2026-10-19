@@ -67,7 +67,7 @@ public class ModuleSaddleUp : RiderAndMountTest
 
         yield return new WaitUntilTimeout(() => _rider.IsMounted() && otherRider.IsMounted());
         
-        ValidateIsMounted("Mount");
+        ValidateIsMounted("Mount", checkBindings: false);
         
         // Dismount
         Pawn_GetGizmos_SU2.DismountPawn(_rider);

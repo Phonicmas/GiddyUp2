@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using DevTools;
 using DevTools.Testing;
 using DevTools.Testing.Utils;
 using GiddyUp;
@@ -31,7 +32,7 @@ public class ModuleCore : RiderAndMountTest
     [Test]
     public void AutomountDefaults()
     {
-        using var settingRollback = new ScopedValueRollback<bool>(ref ModSettings_GiddyUp.automountDisabledByDefault);
+        using var settingRollback = new ScopedRollback<bool>(ref ModSettings_GiddyUp.automountDisabledByDefault);
         ModSettings_GiddyUp.automountDisabledByDefault = true;
         var disabledByDefault = new ExtendedPawnData(_rider);
         Expect.AreEqual(ExtendedPawnData.Automount.False, disabledByDefault.automount);
@@ -128,7 +129,7 @@ public class ModuleCore : RiderAndMountTest
     [Test]
     public void CaravanSpeedSettingAddsAndRemovesGeneratedBonus()
     {
-        using var speedRollback = new ScopedValueRollback<bool>(ref ModSettings_GiddyUp.giveCaravanSpeed);
+        using var speedRollback = new ScopedRollback<bool>(ref ModSettings_GiddyUp.giveCaravanSpeed);
         var originalStats = _mount.def.statBases == null ? null : new List<StatModifier>(_mount.def.statBases);
         try
         {

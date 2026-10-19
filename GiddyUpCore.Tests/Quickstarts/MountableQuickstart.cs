@@ -14,7 +14,7 @@ namespace GiddyUpCore.Tests;
 public class MountableQuickstart
 {
     [SetUp]
-    public IEnumerator SpawnColonists()
+    public void SpawnColonists()
     {
         var wallDef = ThingDefOf.Wall;
         var wallStuff = GenStuff.AllowedStuffsFor(wallDef).ToList();
@@ -34,17 +34,17 @@ public class MountableQuickstart
                     wallStuff[index % wallStuff.Count]), block, pawn.Map, ThingPlaceMode.Direct);
             })
             .SpawnMany(5);
-        var minX = pawns.Min(x => x.Position.x);
-        var maxX = pawns.Max(x => x.Position.x);
-        var minZ = pawns.Min(x => x.Position.z);
-        var maxZ = pawns.Max(x => x.Position.z);
-
-        var rect = new CellRect(minX, minZ, maxX - minX + 1, maxZ - minZ + 1);
-
-        var cells = rect
-            .ClipInsideMap(Find.CurrentMap);
+        // var minX = pawns.Min(x => x.Position.x);
+        // var maxX = pawns.Max(x => x.Position.x);
+        // var minZ = pawns.Min(x => x.Position.z);
+        // var maxZ = pawns.Max(x => x.Position.z);
+        //
+        // var rect = new CellRect(minX, minZ, maxX - minX + 1, maxZ - minZ + 1);
+        //
+        // var cells = rect
+        //     .ClipInsideMap(Find.CurrentMap);
         
-        yield return ScreenshotCamera.TakeScreenshot(Path.Combine(Mod_GiddyUp.Instance.Content.RootDir, "GiddyUpCore.Tests", "artefacts", nameof(SpawnColonists) + ".png"), pawns, cells);
+        // yield return ScreenshotCamera.TakeScreenshot(Path.Combine(Mod_GiddyUp.Instance.Content.RootDir, "GiddyUpCore.Tests", "artefacts", nameof(SpawnColonists) + ".png"), pawns, cells);
     }
 
     [TearDown]
