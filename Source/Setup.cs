@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using GiddyUp.Jobs;
 using GiddyUpCaravan;
 using GiddyUpCore.Compatibility;
@@ -53,7 +54,7 @@ public static class Setup
     static Setup()
     {
         var harmony = new HarmonyLib.Harmony("GiddyUp");
-        harmony.PatchAll();
+        harmony.PatchAll(Assembly.GetExecutingAssembly());
 
         JobDriver_Mounted.BuildAllowedJobsCache(ModSettings_GiddyUp.noMountedHunting);
         BuildMountCache();
