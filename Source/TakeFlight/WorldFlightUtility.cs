@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using GiddyUp;
 using RimWorld;
 using RimWorld.Planet;
@@ -29,24 +30,31 @@ public readonly struct LoadInfo
         range = load > capacity ? 0 : Mathf.FloorToInt(WorldFlightUtility.BaseWorldRange(mount) * multiplier);
     }
 
-    public static LoadInfo For(Pawn rider, Pawn mount) =>
+    public static LoadInfo For(Pawn? rider, Pawn mount) =>
         new LoadInfo(mount, WorldFlightUtility.LoadOf(rider, mount), WorldFlightUtility.CapacityOf(mount));
 }
 
+/// <summary>
+/// A flying mount and its rider. Riderless flying mounts are pairs with no rider: they fly along with a group but
+/// can't fly on their own.
+/// </summary>
 public class FlyingPair
 {
-    public Pawn rider;
+    public Pawn? rider;
     public Pawn mount;
     public LoadInfo load;
 
-    public FlyingPair(Pawn rider, Pawn mount, LoadInfo load)
+    [MemberNotNullWhen(true, nameof(rider))]
+    public bool HasRider => rider != null;
+
+    public FlyingPair(Pawn? rider, Pawn mount, LoadInfo load)
     {
         this.rider = rider;
         this.mount = mount;
         this.load = load;
     }
 
-    public FlyingPair(Pawn rider, Pawn mount) : this(rider, mount, LoadInfo.For(rider, mount))
+    public FlyingPair(Pawn? rider, Pawn mount) : this(rider, mount, LoadInfo.For(rider, mount))
     {
     }
 
@@ -77,9 +85,9 @@ public static class WorldFlightUtility
     private static readonly List<float> TmpFreeInventoryMass = new List<float>();
     private static readonly HashSet<Pawn> TmpFlying = new HashSet<Pawn>();
 
-    public static float LoadOf(Pawn rider, Pawn mount)
+    public static float LoadOf(Pawn? rider, Pawn mount)
     {
-        var load = rider.GetStatValue(StatDefOf.Mass);
+        var load = rider != null ? rider.GetStatValue(StatDefOf.Mass) : 0f;
         if (mount.inventory != null)
             load += MassUtility.InventoryMass(mount);
         return load;
@@ -183,12 +191,38 @@ public static class WorldFlightUtility
         return true;
     }
 
-    public static bool CanFlyWorldFromCaravan(Pawn rider, Pawn mount, LoadInfo load, out string? reason)
+    /// <summary>
+    /// Whether a flying mount without a rider can fly along with a group leaving its map.
+    /// </summary>
+    public static bool CanFlyWorldFromMapRiderless(Pawn mount, LoadInfo load)
+    {
+        var map = mount.Map;
+        if (map == null || !mount.Spawned || mount.Downed || mount.Dead || mount.InMentalState)
+            return false;
+        if (MountedFlightUtility.IsFatigued(mount, out _) || load.Overloaded || load.range < 1)
+            return false;
+        if (map.Biome != null && map.Biome.inVacuum && !mount.RaceProps.canFlyInVacuum)
+            return false;
+        return !mount.Position.Roofed(map);
+    }
+
+    private static bool IsBeingRidden(Pawn mount)
+    {
+        var rider = mount.GetExtendedPawnData()?.ReservedBy;
+        return rider != null && FlyerUtility.TryGetFlyingMount(rider, out var ridden) && ridden == mount;
+    }
+
+    public static bool CanFlyWorldFromCaravan(Pawn? rider, Pawn mount, LoadInfo load, out string? reason)
     {
         reason = null;
-        if (rider.Downed || rider.Dead || mount.Downed || mount.Dead)
+        if (rider != null && (rider.Downed || rider.Dead || mount.Downed || mount.Dead))
         {
             reason = "GU_TF_PairDowned".Translate(rider.Named("RIDER"), mount.Named("MOUNT"));
+            return false;
+        }
+        if (mount.Downed || mount.Dead)
+        {
+            reason = "GU_TF_MountDowned".Translate(mount.Named("MOUNT"));
             return false;
         }
         if (MountedFlightUtility.IsFatigued(mount, out reason))
@@ -217,14 +251,15 @@ public static class WorldFlightUtility
             alsoClickIfOtherInGroupClicked = false,
             action = () => StartMapFlight(rider.Map)
         };
-        if (!CanFlyWorldFromMap(rider, mount, load, out var reason) && EligibleSelectedPairs(rider.Map).Count == 0)
+        if (!CanFlyWorldFromMap(rider, mount, load, out var reason) &&
+            !EligibleSelectedPairs(rider.Map).Exists(p => p.HasRider))
             command.Disable(reason);
         return command;
     }
 
     /// <summary>
-    /// Selected riders on a flying mount that can fly right now. Rebuilt once per UI frame; callers that keep
-    /// the result must copy it.
+    /// Selected riders on a flying mount that can fly right now, plus selected riderless flying mounts that can
+    /// fly along. Rebuilt once per UI frame; callers that keep the result must copy it.
     /// </summary>
     private static List<FlyingPair> EligibleSelectedPairs(Map map)
     {
@@ -247,6 +282,17 @@ public static class WorldFlightUtility
                 continue;
             SelectedPairs.Add(new FlyingPair(pawn, mount, load));
         }
+
+        for (var i = 0; i < selected.Count; i++)
+        {
+            var mount = selected[i];
+            if (mount.Map != map || mount.RaceProps.Humanlike || mount.Faction != Faction.OfPlayer ||
+                !FlyerUtility.IsFlyer(mount.def) || IsBeingRidden(mount) || SelectedPairs.Exists(p => p.mount == mount))
+                continue;
+            var load = LoadInfo.For(null, mount);
+            if (CanFlyWorldFromMapRiderless(mount, load))
+                SelectedPairs.Add(new FlyingPair(null, mount, load));
+        }
         return SelectedPairs;
     }
 
@@ -255,7 +301,7 @@ public static class WorldFlightUtility
         if (map == null)
             return;
         var pairs = new List<FlyingPair>(EligibleSelectedPairs(map));
-        if (pairs.Count == 0)
+        if (!pairs.Exists(p => p.HasRider))
             return;
         var range = MinRange(pairs);
         var pods = new List<IThingHolder> { new PawnGroupHolder(pairs) };
@@ -365,6 +411,15 @@ public static class WorldFlightUtility
         var pairs = new List<FlyingPair>();
         foreach (var pair in chosen)
         {
+            if (!pair.HasRider)
+            {
+                if (pair.mount.Map != map || IsBeingRidden(pair.mount))
+                    continue;
+                pair.RefreshLoad();
+                if (CanFlyWorldFromMapRiderless(pair.mount, pair.load))
+                    pairs.Add(pair);
+                continue;
+            }
             if (!pair.rider.Spawned || pair.rider.Map != map)
                 continue;
             if (!FlyerUtility.TryGetFlyingMount(pair.rider, out var mount) || mount != pair.mount)
@@ -373,11 +428,9 @@ public static class WorldFlightUtility
             if (CanFlyWorldFromMap(pair.rider, pair.mount, pair.load, out _))
                 pairs.Add(pair);
         }
-        if (pairs.Count == 0)
-            return;
         var tiles = Find.WorldGrid.TraversalDistanceBetween(map.Tile, destination, true, int.MaxValue, true);
         pairs.RemoveAll(p => p.load.range < tiles);
-        if (pairs.Count == 0)
+        if (!pairs.Exists(p => p.HasRider))
             return;
 
         var speed = GroupSpeed(pairs);
@@ -400,23 +453,27 @@ public static class WorldFlightUtility
     {
         var rider = pair.rider;
         var mount = pair.mount;
-        var cell = rider.Position;
+        var cell = rider?.Position ?? mount.Position;
 
         LifeStageUtility.PlayNearestLifestageSound(mount, ls => ls.soundCall, g => g.soundCall, m => m.soundCall);
         FleckMaker.ThrowDustPuff(cell.ToVector3Shifted(), map, Mathf.Clamp(mount.BodySize, 1.5f, 4f));
 
-        rider.Dismount(mount, rider.GetExtendedPawnData(), false, default, false, false);
+        if (rider != null)
+            rider.Dismount(mount, rider.GetExtendedPawnData(), false, default, false, false);
         mount.jobs?.StopAll();
-        rider.jobs?.StopAll();
+        rider?.jobs?.StopAll();
 
-        rider.Rotation = mount.Rotation;
         var info = CreateTransporterInfo();
         if (mount.Spawned)
             mount.DeSpawn();
-        if (rider.Spawned)
-            rider.DeSpawn();
         info.innerContainer.TryAdd(mount);
-        info.innerContainer.TryAdd(rider);
+        if (rider != null)
+        {
+            rider.Rotation = mount.Rotation;
+            if (rider.Spawned)
+                rider.DeSpawn();
+            info.innerContainer.TryAdd(rider);
+        }
 
         var active = (ActiveTransporter)ThingMaker.MakeThing(GU_TF_DefOf.GU_TF_MountedFlyerActive);
         active.Contents = info;
@@ -467,14 +524,15 @@ public static class WorldFlightUtility
     private static Command? BuildCaravanGizmo(Caravan caravan)
     {
         var pairs = CaravanPairs(caravan);
-        if (pairs.Count > 0)
+        if (pairs.Exists(p => p.HasRider))
             return MakeCaravanWorldFlightCommand(caravan, pairs);
         return CaravanHasFlyingMount(caravan) ? MakeCaravanNoRiderCommand() : null;
     }
 
     /// <summary>
     /// Riders in the caravan paired with a flying mount, eligible or not. Uses Giddy-Up's reserved mount first, then
-    /// pairs remaining riders with unreserved flying mounts in the caravan.
+    /// pairs remaining riders with unreserved flying mounts in the caravan. Flying mounts left over are added
+    /// without a rider.
     /// </summary>
     public static List<FlyingPair> CaravanPairs(Caravan caravan)
     {
@@ -538,9 +596,18 @@ public static class WorldFlightUtility
             }
 
             pairs.Add(new FlyingPair(rider, TmpFreeMounts[best], bestLoad));
+            TmpTakenMounts.Add(TmpFreeMounts[best]);
             TmpFreeMounts.RemoveAt(best);
             TmpFreeCapacity.RemoveAt(best);
             TmpFreeInventoryMass.RemoveAt(best);
+        }
+
+        for (var i = 0; i < pawns.Count; i++)
+        {
+            var mount = pawns[i];
+            if (mount.RaceProps.Humanlike || !FlyerUtility.IsFlyer(mount.def) || TmpTakenMounts.Contains(mount))
+                continue;
+            pairs.Add(new FlyingPair(null, mount));
         }
 
         TmpTakenMounts.Clear();
@@ -584,18 +651,22 @@ public static class WorldFlightUtility
     {
         string? firstReason = null;
         var eligible = new List<FlyingPair>();
+        var anyRider = false;
         foreach (var pair in allPairs)
         {
             if (CanFlyWorldFromCaravan(pair.rider, pair.mount, pair.load, out var reason))
+            {
                 eligible.Add(pair);
-            else
+                anyRider |= pair.HasRider;
+            }
+            else if (pair.HasRider)
                 firstReason ??= reason;
         }
 
         var description = "GU_TF_FlyCaravanDesc".Translate().Resolve();
         foreach (var pair in eligible)
-            description += "\n- " + pair.rider.LabelShortCap + " / " + pair.mount.LabelShortCap + ": " +
-                           LoadReport(pair.load);
+            description += "\n- " + (pair.HasRider ? pair.rider.LabelShortCap + " / " : "") +
+                           pair.mount.LabelShortCap + ": " + LoadReport(pair.load);
 
         var command = new Command_Action
         {
@@ -605,7 +676,7 @@ public static class WorldFlightUtility
             action = () => StartCaravanFlight(caravan)
         };
 
-        if (eligible.Count == 0)
+        if (!anyRider)
         {
             command.Disable(firstReason);
             return command;
@@ -614,7 +685,8 @@ public static class WorldFlightUtility
         TmpFlying.Clear();
         foreach (var pair in eligible)
         {
-            TmpFlying.Add(pair.rider);
+            if (pair.HasRider)
+                TmpFlying.Add(pair.rider);
             TmpFlying.Add(pair.mount);
         }
         var anyLeftBehind = false;
@@ -638,6 +710,8 @@ public static class WorldFlightUtility
     {
         var pairs = CaravanPairs(caravan);
         pairs.RemoveAll(p => !CanFlyWorldFromCaravan(p.rider, p.mount, p.load, out _));
+        if (!pairs.Exists(p => p.HasRider))
+            pairs.Clear();
         return pairs;
     }
 
@@ -661,7 +735,7 @@ public static class WorldFlightUtility
         var pairs = new List<FlyingPair>();
         foreach (var pair in chosen)
         {
-            if (!caravan.ContainsPawn(pair.rider) || !caravan.ContainsPawn(pair.mount))
+            if ((pair.HasRider && !caravan.ContainsPawn(pair.rider)) || !caravan.ContainsPawn(pair.mount))
                 continue;
             pair.RefreshLoad();
             if (CanFlyWorldFromCaravan(pair.rider, pair.mount, pair.load, out _))
@@ -669,7 +743,7 @@ public static class WorldFlightUtility
         }
         var tiles = Find.WorldGrid.TraversalDistanceBetween(caravan.Tile, destination, true, int.MaxValue, true);
         pairs.RemoveAll(p => p.load.range < tiles);
-        if (pairs.Count == 0)
+        if (!pairs.Exists(p => p.HasRider))
             return;
 
         var speed = GroupSpeed(pairs);
@@ -683,19 +757,22 @@ public static class WorldFlightUtility
 
         foreach (var pair in pairs)
         {
-            var riderData = pair.rider.GetExtendedPawnData();
-            var mountData = pair.mount.GetExtendedPawnData();
-            if (riderData != null && mountData != null)
-            {
-                riderData.ReservedMount = pair.mount;
-                mountData.ReservedBy = pair.rider;
-            }
             var info = CreateTransporterInfo();
-            pair.rider.Rotation = pair.mount.Rotation;
             caravan.RemovePawn(pair.mount);
-            caravan.RemovePawn(pair.rider);
             info.innerContainer.TryAdd(pair.mount);
-            info.innerContainer.TryAdd(pair.rider);
+            if (pair.HasRider)
+            {
+                var riderData = pair.rider.GetExtendedPawnData();
+                var mountData = pair.mount.GetExtendedPawnData();
+                if (riderData != null && mountData != null)
+                {
+                    riderData.ReservedMount = pair.mount;
+                    mountData.ReservedBy = pair.rider;
+                }
+                pair.rider.Rotation = pair.mount.Rotation;
+                caravan.RemovePawn(pair.rider);
+                info.innerContainer.TryAdd(pair.rider);
+            }
             travelling.AddTransporter(info, false);
             MountedFlightUtility.ApplyFatigue(pair.mount, WorldFatigueTicks(pair.mount, tiles, speed));
         }

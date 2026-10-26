@@ -16,12 +16,13 @@
 
 	<!-- World flight -->
 	<GU_TF_FlyWorld>Fly to another tile</GU_TF_FlyWorld>
-	<GU_TF_FlyWorldDesc>Fly {MOUNT_labelShort} and its rider to another tile on the world map. Every selected rider on a flying mount comes along, and the group flies as far as its shortest range.</GU_TF_FlyWorldDesc>
+	<GU_TF_FlyWorldDesc>Fly {MOUNT_labelShort} and its rider to another tile on the world map. Every selected rider on a flying mount comes along, and so does every selected flying mount without a rider. The group flies as far as its shortest range.</GU_TF_FlyWorldDesc>
 	<GU_TF_FlyCaravan>Fly to another tile</GU_TF_FlyCaravan>
-	<GU_TF_FlyCaravanDesc>Riders on flying mounts fly to another tile on the world map. Everyone else stays behind as a caravan. The group flies as far as its shortest range.</GU_TF_FlyCaravanDesc>
+	<GU_TF_FlyCaravanDesc>Riders on flying mounts fly to another tile on the world map, and flying mounts without a rider fly along with them. Everyone else stays behind as a caravan. The group flies as far as its shortest range.</GU_TF_FlyCaravanDesc>
 	<GU_TF_LoadReport>Load {LOAD} of {CAPACITY}: range ×{MULT}, {RANGE} tiles.</GU_TF_LoadReport>
 	<GU_TF_NoWorldRange>{MOUNT_labelShort} can't fly across the world map.</GU_TF_NoWorldRange>
 	<GU_TF_PairDowned>{RIDER_labelShort} or {MOUNT_labelShort} is downed.</GU_TF_PairDowned>
+	<GU_TF_MountDowned>{MOUNT_labelShort} is downed.</GU_TF_MountDowned>
 	<GU_TF_NoRiderForFlyer>Nobody in this caravan can ride its flying mounts.</GU_TF_NoRiderForFlyer>
 	<GU_TF_WouldStrand>The pawns left behind would have nobody to lead the caravan.</GU_TF_WouldStrand>
 	<GU_TF_OtherLayer>Flying mounts can't reach that layer.</GU_TF_OtherLayer>

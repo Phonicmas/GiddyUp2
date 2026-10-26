@@ -17,7 +17,8 @@ public class PawnGroupHolder : IThingHolder
         foreach (var pair in pairs)
         {
             pawns.Add(pair.mount);
-            pawns.Add(pair.rider);
+            if (pair.HasRider)
+                pawns.Add(pair.rider);
         }
         view = new PawnListView(this, pawns);
     }

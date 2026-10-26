@@ -28,3 +28,5 @@ Mark an animal as a flying mount with the `GiddyUpTakeFlight.FlyingMount` mod ex
 ```
 
 World range = base range × (carrying capacity ÷ load), never below ×1 and capped at the max multiplier. Load is the rider's mass (including gear and inventory) plus the mount's own inventory; a mount carrying more than its capacity can't fly at all.
+
+Flying mounts without a rider fly along with a group of riders: from a map, select them together with the riders; from a caravan, they come along on their own. The group needs at least one rider, and a riderless mount's range (load is just its own inventory) counts towards the group's range.
