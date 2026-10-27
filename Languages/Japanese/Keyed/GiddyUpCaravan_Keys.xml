@@ -39,10 +39,6 @@
   <!-- note for translators: The following items need to be really short to fit -->
   <GU_Car_No_Rider>騎手が居ない</GU_Car_No_Rider>
   <GU_Car_Set_Rider>騎手を設定</GU_Car_Set_Rider>
-  <GU_Car_NotInModOptions>騎乗禁止</GU_Car_NotInModOptions>
-  <GU_Car_NotFullyGrown>成獣でない</GU_Car_NotFullyGrown>
-  <GU_Car_NeedsObedience>服従が必要</GU_Car_NeedsObedience>
-  <GU_Car_AnimalNotSelected>未選択</GU_Car_AnimalNotSelected>
   <GU_Car_PawnNotSelected>未選択</GU_Car_PawnNotSelected>
 
 

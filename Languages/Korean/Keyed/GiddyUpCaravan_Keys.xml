@@ -29,10 +29,6 @@
  <!-- note for translators: The following items need to be really short to fit -->
  <GU_Car_No_Rider>라이더 없음</GU_Car_No_Rider>
  <GU_Car_Set_Rider>라이더 설정</GU_Car_Set_Rider>
- <GU_Car_NotInModOptions>탑승 금지</GU_Car_NotInModOptions>
- <GU_Car_NotFullyGrown>성장 미달</GU_Car_NotFullyGrown>
- <GU_Car_NeedsObedience>복종 필요</GU_Car_NeedsObedience>
- <GU_Car_AnimalNotSelected>선택되지 않음</GU_Car_AnimalNotSelected>
  <GU_Car_PawnNotSelected>선택되지 않음</GU_Car_PawnNotSelected>
  
  

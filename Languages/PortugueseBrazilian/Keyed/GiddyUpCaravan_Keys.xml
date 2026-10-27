@@ -39,10 +39,6 @@ Este bônus não é aplicado quando todos os colonos estão cavalgando.</GU_Car_
  <!-- note for translators: The following items need to be really short to fit -->
  <GU_Car_No_Rider>Sem cavaleiro</GU_Car_No_Rider>
  <GU_Car_Set_Rider>Definir cavaleiro</GU_Car_Set_Rider>
- <GU_Car_NotInModOptions>Montaria proibida</GU_Car_NotInModOptions>
- <GU_Car_NotFullyGrown>Não totalmente crescido</GU_Car_NotFullyGrown>
- <GU_Car_NeedsObedience>Precisa obediência</GU_Car_NeedsObedience>
- <GU_Car_AnimalNotSelected>Não selecionado</GU_Car_AnimalNotSelected>
  <GU_Car_PawnNotSelected>não selecionado</GU_Car_PawnNotSelected>
  
 </LanguageData>

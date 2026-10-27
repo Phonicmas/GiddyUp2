@@ -30,10 +30,6 @@
  <!-- note for translators: The following items need to be really short to fit -->
  <GU_Car_No_Rider>Нет ездока</GU_Car_No_Rider>
  <GU_Car_Set_Rider>Выбрать ездока</GU_Car_Set_Rider>
- <GU_Car_NotInModOptions>Езда запрещена</GU_Car_NotInModOptions>
- <GU_Car_NotFullyGrown>Не вырос</GU_Car_NotFullyGrown>
- <GU_Car_NeedsObedience>Нужна покорность</GU_Car_NeedsObedience>
- <GU_Car_AnimalNotSelected>Не выбрано</GU_Car_AnimalNotSelected>
  <GU_Car_PawnNotSelected>не выбран</GU_Car_PawnNotSelected>
  
  

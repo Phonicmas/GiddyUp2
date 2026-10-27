@@ -16,10 +16,6 @@
  <BM_EnemyMountChanceTribal_Title>Szansa nas wrogiego plemiennego wierzchowca</BM_EnemyMountChanceTribal_Title>
  <BM_EnemyMountChanceTribal_Description>Wartość ta określa szanse na pojawienie się plemiennego wroga na wierzchowcu podczas ataku</BM_EnemyMountChanceTribal_Description>
 
- <BM_SizeOk>Możliwe do ujeżdżania</BM_SizeOk>
- <BM_SizeNotOk>Nie możliwe do ujeżdżania</BM_SizeNotOk>
- <BM_DrawFront>Zwierze przed kolonistą</BM_DrawFront>
- <BM_DrawBack>Zwierze za kolonistą</BM_DrawBack>
  
 
 </LanguageData>

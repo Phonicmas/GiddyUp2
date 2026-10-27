@@ -23,10 +23,6 @@
   <!-- note for translators: The following items need to be really short to fit -->
   <GU_Car_No_Rider>無騎手</GU_Car_No_Rider>
   <GU_Car_Set_Rider>分配騎手</GU_Car_Set_Rider>
-  <GU_Car_NotInModOptions>禁止騎乘</GU_Car_NotInModOptions>
-  <GU_Car_NotFullyGrown>未成熟</GU_Car_NotFullyGrown>
-  <GU_Car_NeedsObedience>需要訓練服從</GU_Car_NeedsObedience>
-  <GU_Car_AnimalNotSelected>未選擇</GU_Car_AnimalNotSelected>
   <GU_Car_PawnNotSelected>未選擇</GU_Car_PawnNotSelected>
 
 </LanguageData>

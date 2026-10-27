@@ -30,7 +30,6 @@
   <GUC_IsPoorCondition>动物健康状况差</GUC_IsPoorCondition>
   <GUC_IsRoped>动物被牵引</GUC_IsRoped>
   <GUC_Mount>骑乘</GUC_Mount>
-  <GUC_Mount_GodMode>骑乘 (god mode)</GUC_Mount_GodMode>
   <GUC_Dismount>停止骑乘并拴束</GUC_Dismount>
   <GUC_DismountWithoutHitching>停止骑乘</GUC_DismountWithoutHitching>
   <GUC_SwitchMount>更换坐骑</GUC_SwitchMount>

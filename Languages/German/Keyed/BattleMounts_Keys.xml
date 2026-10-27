@@ -17,10 +17,6 @@
  <BM_EnemyMountChanceTribal_Title>Chance für berittene Stammesmitglieder</BM_EnemyMountChanceTribal_Title>
  <BM_EnemyMountChanceTribal_Description>Chance, dass ein Stammesmitglied bei einem Angriff ein Tier reitet.</BM_EnemyMountChanceTribal_Description>
 
- <BM_SizeOk>Reitbar</BM_SizeOk>
- <BM_SizeNotOk>Nicht reitbar</BM_SizeNotOk>
- <BM_DrawFront>Tier im Vordergrund</BM_DrawFront>
- <BM_DrawBack>Tier im Hintergrund</BM_DrawBack>
 
  
 </LanguageData>

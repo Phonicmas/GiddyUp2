@@ -16,9 +16,5 @@
  <BM_EnemyMountChance_Description>Шанс того, что боец противника прибудет на рейд верхом</BM_EnemyMountChance_Description>
  <BM_EnemyMountChanceTribal_Title>Шанс появления вражеского аборигена-наездника</BM_EnemyMountChanceTribal_Title>
  <BM_EnemyMountChanceTribal_Description>Шанс того, что боец враждебного племени прибудет на рейд верхом</BM_EnemyMountChanceTribal_Description>
- <BM_SizeOk>Седлаемое</BM_SizeOk>
- <BM_SizeNotOk>Не Седлаемое</BM_SizeNotOk>
- <BM_DrawFront>Животное спереди</BM_DrawFront>
- <BM_DrawBack>Животное позади наездника</BM_DrawBack>
 
 </LanguageData>

@@ -39,10 +39,6 @@ Dieser Bonus wird nicht genutzt, wenn alle Kolonisten beritten sind.</GU_Car_inc
  <!-- note for translators: The following items need to be really short to fit -->
  <GU_Car_No_Rider>Kein Reiter</GU_Car_No_Rider>
  <GU_Car_Set_Rider>Reiter wählen</GU_Car_Set_Rider>
- <GU_Car_NotInModOptions>Tier verboten</GU_Car_NotInModOptions>
- <GU_Car_NotFullyGrown>Nicht erwachsen</GU_Car_NotFullyGrown>
- <GU_Car_NeedsObedience>Braucht Gehorsamkeit</GU_Car_NeedsObedience>
- <GU_Car_AnimalNotSelected>Nicht ausgewählt</GU_Car_AnimalNotSelected>
  <GU_Car_PawnNotSelected>nicht ausgewählt</GU_Car_PawnNotSelected>
  
  

@@ -18,8 +18,4 @@
 	<BM_EnemyMountChanceTribal_Title>Enemy pre-industrial pawn mount chance (Min: {0}% Max: {1}% Default: {2}% Current: {3}%)</BM_EnemyMountChanceTribal_Title>
 	<BM_EnemyMountChanceTribal_Description>Chance that a given pre-industrial enemy pawn has a mount during a raid.</BM_EnemyMountChanceTribal_Description>
 	
-	<BM_SizeOk>Mountable</BM_SizeOk>
-	<BM_SizeNotOk>Not Mountable</BM_SizeNotOk>
-	<BM_DrawFront>Animal in front</BM_DrawFront>
-	<BM_DrawBack>Animal behind pawn</BM_DrawBack>
 </LanguageData>

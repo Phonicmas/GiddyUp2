@@ -23,10 +23,6 @@
   <!-- note for translators: The following items need to be really short to fit -->
   <GU_Car_No_Rider>无骑乘者</GU_Car_No_Rider>
   <GU_Car_Set_Rider>设置骑乘者</GU_Car_Set_Rider>
-  <GU_Car_NotInModOptions>动物未设置为可骑乘</GU_Car_NotInModOptions>
-  <GU_Car_NotFullyGrown>动物未成年</GU_Car_NotFullyGrown>
-  <GU_Car_NeedsObedience>需要训练</GU_Car_NeedsObedience>
-  <GU_Car_AnimalNotSelected>未选择</GU_Car_AnimalNotSelected>
   <GU_Car_PawnNotSelected>未选择殖民者</GU_Car_PawnNotSelected>
 
 </LanguageData>

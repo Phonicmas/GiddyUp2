@@ -13,10 +13,6 @@
   <BM_EnemyMountChanceTribal_Title>Chance qu'un ennemi tribal ait une monture</BM_EnemyMountChanceTribal_Title>
   <BM_EnemyMountChanceTribal_Description>Chance qu'un ennemi tribal ait une monture pendant un raid</BM_EnemyMountChanceTribal_Description>
 
-  <BM_SizeOk>Montable</BM_SizeOk>
-  <BM_SizeNotOk>Non montable</BM_SizeNotOk>
-  <BM_DrawFront>Animal devant</BM_DrawFront>
-  <BM_DrawBack>Animal derrière le joueur</BM_DrawBack>
 
 
 </LanguageData>

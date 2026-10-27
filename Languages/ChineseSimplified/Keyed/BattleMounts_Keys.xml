@@ -18,9 +18,5 @@
   <BM_EnemyMountChanceTribal_Title>部落敌人骑乘几率 (最小值: {0}% 最大值: {1}% 默认值: {2}% 当前值: {3}%)</BM_EnemyMountChanceTribal_Title>
   <BM_EnemyMountChanceTribal_Description>部落敌人在袭击中骑乘的几率。</BM_EnemyMountChanceTribal_Description>
 
-  <BM_SizeOk>可骑乘</BM_SizeOk>
-  <BM_SizeNotOk>不可骑乘</BM_SizeNotOk>
-  <BM_DrawFront>动物的贴图在前</BM_DrawFront>
-  <BM_DrawBack>小人的贴图在前</BM_DrawBack>
 
 </LanguageData>

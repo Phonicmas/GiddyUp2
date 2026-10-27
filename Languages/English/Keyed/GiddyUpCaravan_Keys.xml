@@ -23,9 +23,5 @@
 	<!-- note for translators: The following items need to be really short to fit -->
 	<GU_Car_No_Rider>No rider</GU_Car_No_Rider>
 	<GU_Car_Set_Rider>Set rider</GU_Car_Set_Rider>
-	<GU_Car_NotInModOptions> </GU_Car_NotInModOptions>
-	<GU_Car_NotFullyGrown> </GU_Car_NotFullyGrown>
-	<GU_Car_NeedsObedience> </GU_Car_NeedsObedience>
-	<GU_Car_AnimalNotSelected> </GU_Car_AnimalNotSelected>
 	<GU_Car_PawnNotSelected>not selected</GU_Car_PawnNotSelected>
 </LanguageData>

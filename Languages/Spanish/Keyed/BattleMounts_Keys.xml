@@ -17,10 +17,6 @@
   <BM_EnemyMountChance_Description>Posibilidad de que un colono enemigo lo monte durante una incursión</BM_EnemyMountChance_Description>
   <BM_EnemyMountChanceTribal_Title>Enemigo tribal posibilidad de montaje</BM_EnemyMountChanceTribal_Title>
   <BM_EnemyMountChanceTribal_Description>Posibilidad de que un colono enemigo tribal lo monte durante una incursión</BM_EnemyMountChanceTribal_Description>
-  <BM_SizeOk>Montable</BM_SizeOk>
-  <BM_SizeNotOk>No Montable</BM_SizeNotOk>
-  <BM_DrawFront>Animal al frente</BM_DrawFront>
-  <BM_DrawBack>Animal detrás del personaje</BM_DrawBack>
 
 
 </LanguageData>

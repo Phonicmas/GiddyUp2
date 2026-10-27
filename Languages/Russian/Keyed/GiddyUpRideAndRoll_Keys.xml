@@ -13,6 +13,5 @@
 <GU_RR_Designator_GU_NoMount_Expand_Description>Прежде, чем зайти в пешеходную область верхом, колонисты оставят своё ездовое животное около ближайшей точки парковки. Это произойдёт только, если указанное место находится внутри пешеходной зоны. ВНИМАНИЕ: пешеходные зоны работают только, когда обозначены точки парковки!</GU_RR_Designator_GU_NoMount_Expand_Description>
 <GU_RR_NoDropAnimal_Label>Нет точек парковки животных (Giddy-up!)</GU_RR_NoDropAnimal_Label>
 <GU_RR_NoDropAnimal_Description>Была указана пешеходная область, но не создано ни одной точки парковки. Из-за этого пешеходная зона не работает. Установить точки парковки можно во вкладке "Области".</GU_RR_NoDropAnimal_Description>
-<GU_RR_NotReachable_DropAnimal_Message>Колонист не смог достичь точки парковки Giddy-up! Убедитесь, что до всех точек парковки животных можно добраться</GU_RR_NotReachable_DropAnimal_Message>
 
 </LanguageData>

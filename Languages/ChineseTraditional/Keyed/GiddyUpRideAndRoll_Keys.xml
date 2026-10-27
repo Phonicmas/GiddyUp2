@@ -12,8 +12,6 @@
   <GU_RR_MinAutoMountDistance_Title>工作距離－尋找坐騎（範圍：{0}～{1}　默認：{2} 當前：{3}）</GU_RR_MinAutoMountDistance_Title>
   <GU_RR_MinAutoMountDistance_Description>如果距離超過設定值，殖民者將尋找坐騎來完成工作。工作距離影響多個步驟，例如拖運。</GU_RR_MinAutoMountDistance_Description>
 
-  <GU_RR_MinAutoMountDistanceFromAnimal_Title>坐騎－最大相距（範圍：{0}～{1}　默認：{2} 當前：{3}）</GU_RR_MinAutoMountDistanceFromAnimal_Title>
-  <GU_RR_MinAutoMountDistanceFromAnimal_Description>如果殖民者和坐騎之間的距離小於此設定，就會考慮騎乘移動。</GU_RR_MinAutoMountDistanceFromAnimal_Description>
 
   <GU_RR_AutoHitchDistance_Title>自動拴住距離（範圍：{0}～{1}　默認：{2} 當前：{3}）</GU_RR_AutoHitchDistance_Title>
   <GU_RR_AutoHitchDistance_Description>單位會先嘗試把坐騎放在指定點。如果目的地最近的點比設定值遠，將自動綁好坐騎。</GU_RR_AutoHitchDistance_Description>
@@ -36,7 +34,6 @@
   <GU_RR_NoDropAnimal_Label>無釋放點</GU_RR_NoDropAnimal_Label>
   <GU_RR_NoDropAnimal_Description>禁止騎乘區域已被指定，但沒有釋放點。這樣禁止騎乘的區域沒有效果。請設置一個釋放點。</GU_RR_NoDropAnimal_Description>
 
-  <GU_RR_NotReachable_DropAnimal_Message>殖民者無法到達 {0} 的坐騎點。</GU_RR_NotReachable_DropAnimal_Message>
 
   <GU_RR_Gizmo_LeaveRider_Label>離開騎手</GU_RR_Gizmo_LeaveRider_Label>
   <GU_RR_Gizmo_LeaveRider_Description>命令動物停止等待騎手。</GU_RR_Gizmo_LeaveRider_Description>
